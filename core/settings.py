@@ -113,9 +113,10 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'News Aggregator API',
-    'DESCRIPTION': 'News',
+    'DESCRIPTION': 'API для агрегации новостей',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
 
 

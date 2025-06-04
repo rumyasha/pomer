@@ -1,64 +1,36 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from .parsers import KaktusMediaParser
-from datetime import datetime, timedelta
-import asyncio
+from rest_framework import viewsets
+from .models import Article
+from .serializers import ArticleSerializer
+from django.utils import timezone
+from rest_framework.permissions import AllowAny
 
 
-class NewsBaseView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_class = KaktusMediaParser
+class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API для просмотра новостей.
+    Фильтры:
+    - ?published=true - только опубликованные
+    - ?category=slug - по категории
+    - ?source=id - по источнику
+    """
+    serializer_class = ArticleSerializer
+    permission_classes = [AllowAny]
 
-    async def get_news(self, date):
-        async with self.parser_class() as parser:
-            return await parser.fetch_news(date)
+    def get_queryset(self):
+        queryset = Article.objects.all()
 
+        # Фильтр по статусу публикации
+        if self.request.query_params.get('published') == 'true':
+            queryset = queryset.filter(is_published=True)
 
-class TodayNewsView(NewsBaseView):
-    """Новости за сегодня"""
+        # Фильтр по категории
+        category_slug = self.request.query_params.get('category')
+        if category_slug:
+            queryset = queryset.filter(categories__slug=category_slug)
 
-    def get(self, request):
-        try:
-            loop = asyncio.new_event_loop()
-            news_data = loop.run_until_complete(self.get_news(datetime.now()))
-            loop.close()
-            return Response(news_data)
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        # Фильтр по источнику
+        source_id = self.request.query_params.get('source')
+        if source_id:
+            queryset = queryset.filter(source_id=source_id)
 
-
-class LatestNewsView(NewsBaseView):
-    """Последние новости с пагинацией"""
-
-    def get(self, request):
-        try:
-            page = int(request.query_params.get('page', 1))
-            per_page = int(request.query_params.get('per_page', 10))
-
-            loop = asyncio.new_event_loop()
-            today = loop.run_until_complete(self.get_news(datetime.now()))
-            yesterday = loop.run_until_complete(
-                self.get_news(datetime.now() - timedelta(days=1))
-            )
-            loop.close()
-
-            all_articles = today['articles'] + yesterday['articles']
-            start = (page - 1) * per_page
-            paginated = all_articles[start:start + per_page]
-
-            return Response({
-                'page': page,
-                'per_page': per_page,
-                'total': len(all_articles),
-                'articles': paginated
-            })
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return queryset.order_by('-published_at')

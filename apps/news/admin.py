@@ -14,8 +14,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'source', 'published_at')
-    list_filter = ('source', 'categories')
+    list_display = ('title', 'source', 'published_at','publication_date')
+    list_filter = ('source', 'categories','is_published')
     search_fields = ('title', 'content')
     date_hierarchy = 'published_at'
     filter_horizontal = ('categories',)

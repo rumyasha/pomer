@@ -1,7 +1,10 @@
-from django.urls import path
-from .views import TodayNewsView, LatestNewsView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ArticleViewSet
+
+router = DefaultRouter()
+router.register(r'articles', ArticleViewSet, basename='article')
 
 urlpatterns = [
-    path('today/', TodayNewsView.as_view(), name='today-news'),
-    path('latest/', LatestNewsView.as_view(), name='latest-news'),
+    path('', include(router.urls)),
 ]

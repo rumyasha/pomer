@@ -1,13 +1,15 @@
 import aiohttp
 from bs4 import BeautifulSoup
 from datetime import datetime
-from typing import List, Dict, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class KaktusMediaParser:
     BASE_URL = "https://kaktus.media"
 
-    async def parse_articles(self, html: str) -> List[Dict]:
+    async def parse_articles(self, html: str) -> list:
         """Парсинг списка статей из HTML"""
         soup = BeautifulSoup(html, 'lxml')
         articles = []
@@ -25,23 +27,28 @@ class KaktusMediaParser:
                     'source': 'Kaktus Media'
                 })
             except Exception as e:
-                print(f"Ошибка парсинга статьи: {e}")
+                logger.warning(f"Ошибка парсинга статьи: {e}")
                 continue
 
         return articles
 
-    async def fetch_news(self, date: datetime) -> Dict:
+    async def fetch_news(self, date: datetime) -> dict:
         """Получение новостей за указанную дату"""
         date_str = date.strftime("%Y-%m-%d")
         url = f"{self.BASE_URL}/?lable=8&date={date_str}&order=time"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    html = await response.text()
-                    return {
-                        'date': date_str,
-                        'articles': await self.parse_articles(html),
-                        'source': self.BASE_URL
-                    }
-                return {'date': date_str, 'articles': []}
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        html = await response.text()
+                        return {
+                            'date': date_str,
+                            'articles': await self.parse_articles(html),
+                            'source': self.BASE_URL
+                        }
+                    return {'date': date_str, 'articles': []}
+
+        except Exception as e:
+            logger.error(f"Ошибка при получении новостей: {e}")
+            return {'date': date_str, 'articles': []}

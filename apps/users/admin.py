@@ -1,26 +1,23 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
-from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import  Article
+from ..news.models import Source, Category
 
-class CustomUserAdmin(UserAdmin):
-    add_form = CustomUserCreationForm
-    form = CustomUserChangeForm
-    model = CustomUser
-    list_display = ('email', 'is_staff')
-    list_filter = ('is_staff', 'is_superuser')
-    fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'phone')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
-    )
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'is_staff'),
-        }),
-    )
-    search_fields = ('email',)
-    ordering = ('email',)
 
-admin.site.register(CustomUser, CustomUserAdmin)
+@admin.register(Source)
+class SourceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'url', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+
+@admin.register(Article)
+class ArticleAdmin(admin.ModelAdmin):
+    list_display = ('title', 'source', 'published_at', 'is_published')
+    list_filter = ('source', 'categories', 'is_published')
+    search_fields = ('title', 'content')
+    date_hierarchy = 'published_at'
+    filter_horizontal = ('categories',)
